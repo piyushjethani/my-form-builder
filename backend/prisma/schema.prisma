@@ -1,0 +1,106 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  admin
+  user
+}
+
+enum FormStatus {
+  draft
+  published
+}
+
+enum FieldType {
+  text
+  textarea
+  number
+  email
+  dropdown
+  checkbox
+  radio
+  date
+  file
+}
+
+model User {
+  id            Int        @id @default(autoincrement())
+  name          String
+  email         String     @unique
+  password_hash String
+  role          Role       @default(user)
+  created_at    DateTime   @default(now())
+  forms         Form[]
+  responses     Response[]
+
+  @@map("users")
+}
+
+model Form {
+  id           Int          @id @default(autoincrement())
+  admin_id     Int
+  title        String
+  description  String?      @db.Text
+  slug         String       @unique
+  status       FormStatus   @default(draft)
+  theme_config Json?
+  created_at   DateTime     @default(now())
+  updated_at   DateTime     @updatedAt
+  admin        User         @relation(fields: [admin_id], references: [id], onDelete: Cascade)
+  fields       FormField[]
+  responses    Response[]
+
+  @@index([slug], map: "idx_forms_slug")
+  @@index([admin_id], map: "idx_forms_admin_id")
+  @@map("forms")
+}
+
+model FormField {
+  id               Int              @id @default(autoincrement())
+  form_id          Int
+  field_type       FieldType
+  label            String
+  placeholder      String?
+  options          Json?
+  validation_rules Json?
+  order_index      Int
+  is_required      Boolean          @default(false)
+  form             Form             @relation(fields: [form_id], references: [id], onDelete: Cascade)
+  answers          ResponseAnswer[]
+
+  @@index([form_id], map: "idx_form_fields_form_id")
+  @@map("form_fields")
+}
+
+model Response {
+  id           Int              @id @default(autoincrement())
+  form_id      Int
+  submitted_by Int?
+  submitted_at DateTime         @default(now())
+  form         Form             @relation(fields: [form_id], references: [id], onDelete: Cascade)
+  user         User?            @relation(fields: [submitted_by], references: [id], onDelete: SetNull)
+  answers      ResponseAnswer[]
+
+  @@index([form_id], map: "idx_responses_form_id")
+  @@index([submitted_by], map: "idx_responses_submitted_by")
+  @@map("responses")
+}
+
+model ResponseAnswer {
+  id          Int       @id @default(autoincrement())
+  response_id Int
+  field_id    Int
+  value       Json
+  response    Response  @relation(fields: [response_id], references: [id], onDelete: Cascade)
+  field       FormField @relation(fields: [field_id], references: [id], onDelete: Cascade)
+
+  @@index([response_id], map: "idx_response_answers_response_id")
+  @@index([field_id], map: "idx_response_answers_field_id")
+  @@map("response_answers")
+}
