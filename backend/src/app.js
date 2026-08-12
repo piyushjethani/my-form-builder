@@ -12,7 +12,8 @@ const { ok } = require('./utils/apiResponse');
 const app = express();
 
 app.use(helmet());
-app.use(cors({ origin: clientOrigin, credentials: true }));
+app.use(cors({ origin:  "https://my-form-builder-2.onrender.com"
+    , credentials: true }));
 app.use(express.json({ limit: '2mb' }));
 app.use(morgan('dev'));
 
@@ -23,5 +24,6 @@ app.use('/api/public', publicRoutes);
 
 app.use(notFound);
 app.use(errorHandler);
+// app.use(cors());
 
 module.exports = app;
